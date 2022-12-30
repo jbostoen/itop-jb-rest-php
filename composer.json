@@ -1,4 +1,17 @@
 {
+	"name": "jbostoen/itoprest",
+	"type": "library",
+	"description": "Basic iTop REST/JSON API client library",
+	"keywords": ["itop"],
+	"homepage": "https://github.com/jbostoen/itop-jb-rest-php",
+	"license": "MIT",
+	"authors": [
+		{
+				"name": "Jeffrey Bostoen",
+				"homepage": "https://jeffreybostoen.be",
+				"role": "Developer"
+		}
+	],
 	"autoload": {
 		"psr-4": {
 			"jb_itop_rest\\": "src/"
