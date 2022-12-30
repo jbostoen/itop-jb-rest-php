@@ -17,9 +17,9 @@
  
  
 	/**
-	 * Class iTop_Rest. A class to communicate with iTop API more efficiently in PHP implementations.
+	 * Class iTopRest. A class to communicate with iTop API more efficiently in PHP implementations.
 	 */
-	class iTop_Rest {
+	class iTopRest {
 		
 		/**
 		* @var \String Name which is used by default in REST comments

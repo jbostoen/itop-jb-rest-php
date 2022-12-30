@@ -1,6 +1,6 @@
 # iTop REST implementation (PHP)
 
-Copyright (C) 2019-2021 Jeffrey Bostoen
+Copyright (C) 2019-2022 Jeffrey Bostoen
 
 [![License](https://img.shields.io/github/license/jbostoen/iTop-custom-extensions)](https://github.com/jbostoen/iTop-custom-extensions/blob/master/license.md)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/jbostoen)
@@ -11,21 +11,28 @@ Need custom development?
 Please get in touch to discuss the terms: **info@jeffreybostoen.be** / https://jeffreybostoen.be
 
 ## What?
+
 A simple PHP class which offers easy access to the most important iTop REST/JSON API actions.
 
-Not everything is implemented, mostly:
+Not everything is implemented. Basic support for:
+
 * core/get
 * core/create
 * core/update
 * core/delete
 
-There's a generic method to post and process other info; and prepare files to be sent to iTop.
-Also supports sending base64 encoded data (files).
+There's a generic method to post and process other info.  
+Also supports preparing and sending base64 encoded data (files).
 
-## Example
+## Examples
+
 ```
 
-$oRest = new \iTop_Rest();
+require('vendor/autoload.php');
+
+use jb_itop_rest\iTopRest;
+
+$oRest = new iTopRest();
 $oRest->user = 'user';
 $oRest->password = 'pwd';
 $oRest->url = 'http://localhost/itop/web/webservices/rest.php';
