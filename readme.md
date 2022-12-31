@@ -33,9 +33,9 @@ require('vendor/autoload.php');
 use jb_itop_rest\iTopRest;
 
 $oRest = new iTopRest();
-$oRest->user = 'user';
-$oRest->password = 'pwd';
-$oRest->url = 'http://localhost/itop/web/webservices/rest.php';
+$oRest->sUserName = 'user';
+$oRest->sPassword = 'pwd';
+$oRest->sUrl = 'http://localhost/itop/web/webservices/rest.php';
 
 // Fetch objects of type "Person"
 $aPersons = $oRest->Get([

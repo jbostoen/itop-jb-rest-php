@@ -1,9 +1,9 @@
 <?php
 
 /**
- * @copyright   Copyright (C) 2019-2020 Jeffrey Bostoen
+ * @copyright   Copyright (C) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2020-12-14 10:14:51
+ * @version     2022-12-31 16:50:51
  * @see         https://www.itophub.io/wiki/page?id=latest%3Aadvancedtopics%3Arest_json
  *
  * Defines class iTop_Rest, which communicates with iTop REST/JSON API
@@ -33,14 +33,9 @@
 		
 		/* For debugging only */
 		/**
-		 * @var \Boolean Output the request sent to iTop REST/JSON
+		 * @var \Boolean Outputs the network request and response info sent to iTop REST/JSON
 		 */
-		public $bShowRequest = false;
-		
-		/**
-		 * @var \Boolean Output the response from iTop REST/JSON
-		 */
-		public $bShowResponse = false;
+		public $bTrace = false;
 		
 		
 		/** 
@@ -146,27 +141,25 @@
 			
 
 			curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-			curl_setopt($ch, CURLOPT_USERPWD, $this->sUserName . ':' . $this->sPassword);
+			curl_setopt($ch, CURLOPT_USERPWD, $this->sUserName.':'.$this->sPassword);
 
 			 
 			// Set the url
 			curl_setopt($ch, CURLOPT_URL, $this->sUrl);
 			
-			// You need to use URL encode here. If you don't, you might end up with issues. A base64 string easily includes plus signs which need to be escaped
-			$sPostString = ''.
-				'&version='.$this->sVersion.
-				'&auth_user='.$this->sUserName.
-				'&auth_pwd='.$this->sPassword.
-				'&json_data='.urlencode(json_encode($aJSONData));
+			// URL encode here. A base64 string easily includes plus signs which need to be escaped
+			$aPostData = [
+				'version' => $this->sVersion,
+				'auth_user' => $this->sUserName,
+				'auth_pwd' => $this->sPassword,
+				'json_data' => json_encode($aJSONData)
+			];
 	
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $sPostString);                                                                  
-			curl_setopt($ch, CURLOPT_HTTPHEADER, [                                                                                
-				'Content-Length: ' . strlen($sPostString)                                                                       
-			]);             
-
-			if($this->bShowRequest == true) {				
-				echo 'Request:' . PHP_EOL .json_encode($aJSONData, JSON_PRETTY_PRINT); 				
-			}
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $aPostData);                                                                  
+			
+			$this->Trace('Url: '.$this->sUrl);
+			$this->Trace('Request: '.PHP_EOL.json_encode($aPostData));
+			$this->Trace('Data for iTop API: '.json_encode($aJSONData, JSON_PRETTY_PRINT));
 			
 			// Execute
 			$sResult = curl_exec($ch);
@@ -174,9 +167,7 @@
 			// Closing
 			curl_close($ch);
   
-			if($this->bShowResponse == true) { 
-				echo 'Response: ' . PHP_EOL  .$sResult;  
-			}
+			$this->Trace('Response: '.$sResult);
 			
 			$aResult = json_decode($sResult, true);
 			
@@ -494,6 +485,17 @@
 			]);
 			
 			return $this->ProcessResult($aResult, $aParameters); 
+			
+		}
+		
+		/**
+		 * Trace function
+		 */
+		public function Trace($sTrace) {
+			
+			if($this->bTrace == true) {
+				echo $sTrace.PHP_EOL;
+			}
 			
 		}
 		
