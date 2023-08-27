@@ -1,9 +1,9 @@
 <?php
 
 /**
- * @copyright   Copyright (C) 2019-2022 Jeffrey Bostoen
+ * @copyright   Copyright (C) 2019-2023 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2022-12-31 16:50:51
+ * @version     2023-08-27 10:16:00
  * @see         https://www.itophub.io/wiki/page?id=latest%3Aadvancedtopics%3Arest_json
  *
  * Defines class iTop_Rest, which communicates with iTop REST/JSON API
@@ -22,35 +22,39 @@
 	class iTopRest {
 		
 		/**
-		* @var \String Name which is used by default in REST comments
+		* @var \String $sRestName. Name which is used by default in REST comments.
 		*/
 		public $sRestName = 'iTop REST';		
 		
 		/**
-		 * @var \String Password of the iTop user which has the REST User Profile (in iTop)
+		 * @var \String $sPassword. Password of the iTop user which has the REST User Profile (in iTop)
 		 */
 		public $sPassword = 'password';
 		
-		/* For debugging only */
 		/**
-		 * @var \Boolean Outputs the network request and response info sent to iTop REST/JSON
+		 * @var \Boolean $bTrace. For debugging purposes. Outputs the network request and response info sent to iTop REST/JSON.
 		 */
 		public $bTrace = false;
 		
+		/**
+		 * @var \Boolean $bSkipCertificateCheck. For development purposes. Skips SSL/TLS checks.
+		 */
+		public $bSkipCertificateCheck = false;
 		
 		/** 
-		 * @var \String URL of the iTop web services, including version. Example: 'http://localhost/itop/web/webservices/rest.php'
+		 * @var \String $sURL. URL of the iTop web services, including version. Example: 'http://localhost/itop/web/webservices/rest.php'
 		 * @details If left blank, an attempt to derive this info will happen in __construct()
 		 */
 		public $sUrl = '';
 		
 		/**
-		 *@var \String User in iTop which has the REST User Profile (in iTop). iTop REST/JSON error messages might be in the native language of the specified user.
+		 *@var \String $sUserName. User in iTop which has the REST User Profile (in iTop). iTop REST/JSON error messages might be in the native language of the specified user.
 		 */
 		public $sUserName = 'admin';
 		
 		/**
-		 * @var \String describing the REST API version. 1.3 starting with iTop 2.2.0, still valid for iTop 2.6.0
+		 * @var \String $sVersion. describing the REST API version. 
+		 * @See https://www.itophub.io/wiki/page?id=latest:advancedtopics:rest_json#changes_history
 		 */
 		public $sVersion = '1.3';
 		
@@ -58,9 +62,9 @@
 		/**
 		 * Constructor
 		 *
-		 * @param \String $sUserName Optional User name
-		 * @param \String $sPassword Optional Password
-		 * @param \String $sUrl URL
+		 * @param \String $sUserName Optional User name.
+		 * @param \String $sPassword Optional Password.
+		 * @param \String $sUrl URL Optional iTop URL (REST) string.
 		 *
 		 * @throws \Exception
 		 */		 
@@ -112,7 +116,7 @@
 				}
 				
 				// return hasn't happened: this means we have an error here.
-				throw new Exception('Could not automatically derive iTop Rest/JSON url');
+				$this->Trace('Could not automatically derive iTop Rest/JSON URL. It must be set manually.');
 				
 			}
 		}
@@ -135,7 +139,11 @@
 			$ch = curl_init();
 			 
 			// Disable SSL verification
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			if($this->bSkipCertificateCheck == true) {
+				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+				curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+			}
+			
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');        
 			
@@ -155,14 +163,18 @@
 				'json_data' => json_encode($aJSONData)
 			];
 	
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $aPostData);                                                                  
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $aPostData);
 			
 			$this->Trace('Url: '.$this->sUrl);
 			$this->Trace('Request: '.PHP_EOL.json_encode($aPostData));
 			$this->Trace('Data for iTop API: '.json_encode($aJSONData, JSON_PRETTY_PRINT));
+			$this->Trace('cURL start exec: '.date('Y-m-d H:i:s'));
 			
 			// Execute
 			$sResult = curl_exec($ch);
+			
+			$this->Trace('cURL status code: '.curl_getinfo($ch, CURLINFO_HTTP_CODE));
+			$this->Trace('cURL end exec: '.date('Y-m-d H:i:s'));
 			
 			// Closing
 			curl_close($ch);
@@ -175,7 +187,7 @@
 				throw new Exception('Invalid response from iTop API/REST. Incorrect configuration or something wrong with network or iTop?');
 			}
     
-			return $aResult; 
+			return $aResult;
 		
 		}
 		
@@ -251,13 +263,13 @@
 			// Valid response ('code' = 0)
 			if(isset($aServiceResponse['code']) == true && $aServiceResponse['code'] == 0) {
 								
-				// Valid call, no results? (usually after 'operation/get'
+				// Valid call, no results? (usually after 'operation/get')
 				if(isset($aServiceResponse['objects']) == false) {
 					return [];
 				}
 				else {
 					$aObjects = $aServiceResponse['objects'];
-					return (isset($aParameters['no_keys']) == true ? ($aParameters['no_keys'] == true ? array_values($aObjects) : $aObjects) : $aObjects);
+					return (isset($aParameters['no_keys']) == true && $aParameters['no_keys'] == true ? array_values($aObjects) : $aObjects);
 				}
 			}
 			else {
@@ -421,7 +433,7 @@
 				'key' => $aParameters['key'], // OQL query (String), ID (Float) or fields/values (Array)
 				'output_fields' => (isset($aParameters['output_fields']) == true ? $aParameters['output_fields'] :	'*' /* All fields */)			
 			]);
-			 
+
 			return $this->ProcessResult($aResult, $aParameters); 
 			
 		} 
@@ -489,12 +501,14 @@
 		}
 		
 		/**
-		 * Trace function
+		 * Trace function. For debugging purposes.
 		 */
 		public function Trace($sTrace) {
 			
 			if($this->bTrace == true) {
-				echo $sTrace.PHP_EOL;
+				
+				file_put_contents('itop_api_trace.txt', date('Y-m-d H:i:s').' | '.$sTrace.PHP_EOL, FILE_APPEND);
+				
 			}
 			
 		}

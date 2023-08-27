@@ -1,6 +1,6 @@
 # iTop REST implementation (PHP)
 
-Copyright (C) 2019-2022 Jeffrey Bostoen
+Copyright (C) 2019-2023 Jeffrey Bostoen
 
 [![License](https://img.shields.io/github/license/jbostoen/iTop-custom-extensions)](https://github.com/jbostoen/iTop-custom-extensions/blob/master/license.md)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/jbostoen)
@@ -12,7 +12,7 @@ Please get in touch to discuss the terms: **info@jeffreybostoen.be** / https://j
 
 ## What?
 
-A simple PHP class which offers easy access to the most important iTop REST/JSON API actions.
+A simple PHP class and very basic implementation which offers easy access to the most important iTop REST/JSON API actions.
 
 Not everything is implemented. Basic support for:
 
@@ -23,6 +23,7 @@ Not everything is implemented. Basic support for:
 
 There's a generic method to post and process other info.  
 Also supports preparing and sending base64 encoded data (files).
+
 
 ## Examples
 
@@ -73,5 +74,18 @@ $oRest->Delete([
 	'no_keys' => true
 ]);
 
+```
+
+**Options**
+
+Show trace output (shows cURL and iTop errors, sent and received data, ...):
+
+```
+$oRest->bTrace = true;
+```
+
+Bypass SSL/TLS check:
+```
+$oRest->bSkipCertificateCheck = true;
 ```
 
