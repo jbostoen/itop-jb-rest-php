@@ -194,7 +194,7 @@ class Service {
 	 */
 	public function SetOutputFields(string $sOutputFields = '*') : Service {
 
-		$this->sOutputFields;
+		$this->sOutputFields = $sOutputFields;
 		return $this;
 
 	}
@@ -203,7 +203,7 @@ class Service {
 	/**
 	 * Constructor
 	 *
-	 * @param string $sUrl URL Optional iTop URL (REST).
+	 * @param string $sUrl URL Optional iTop URL (REST). Example: http://localhost/itop/web/webservices/rest.php
 	 * @param string $sUserLogin Optional User login name.
 	 * @param string $sPassword Optional Password.
 	 *
@@ -222,7 +222,7 @@ class Service {
 	 * Sends data to the iTop REST services and returns data (decoded JSON).
 	 *
 	 * @param $aJSONData [
-	 *  'operation'       => Required. String.
+	 *  'operation'       => Required. String.  
 	 *		(other fields, depending on the operation. Read iTop Rest/JSON documentation.)
 	 * ];
 	 * 
@@ -289,19 +289,18 @@ class Service {
 	 *
 	 * @param string $sFileName Path of the file(already on the same file system as this PHP application).  
 	 * 
-	 * @return Array
-	 * [
-	 *  'data'            => base64 encoded file
-	 *  'mimetype'        => MIME-type of the file
-	 *  'filename'        => Filename (short)
-	 * ];
+	 * @return array
+	 * The array contains these keys:
+	 * - data: The base64 encoded file.
+	 * - filename: The short file name (without path).
+	 * - mimetype: The MIME-type of the file.
+	 * ]; 
 	 */ 
 	public function PrepareFile(string $sFileName) : array {
 		
 		$sFileName = $sFileName;
 		$sType = mime_content_type($sFileName);
 		$oData = file_get_contents($sFileName);
-		//$base64 = "data:".$sType . ";base64," . base64_encode($oData);
 		
 		return [
 			'data' => base64_encode($oData), // Warning: escape url_encode!
@@ -340,13 +339,14 @@ class Service {
 	 * If an OQL query is specified as a key, this will automatically detect and set the class name if it's missing.
 	 * 
 	 * @param array $aInput Expects at least either a key named 'class' or a key named 'key' containing an iTop OQL query.
-	 * @return String $sInput Class name.
+	 * @return string $sInput Class name.
 	 *
 	 */
-	private function GetClassName(array $aInput = []) {
+	private function GetClassName(array $aInput = []) : string {
 						
 		if(isset($aInput['class']) == true) {
 			
+			// The class was already explicitly defined.
 			return $aInput['class'];
 		
 		}
@@ -356,31 +356,33 @@ class Service {
 			// Other possibilities: Integer (ID); Array of one or more fields and their values.
 			if(is_string($aInput['key']) == true) {
 					
-				if(preg_match('/^select /i', $aInput['key'])) {
-					// Dealing with an OQL query. 
-					// Generic: SELECT UserRequest
-					// Specific: SELECT UserRequest WHERE ...
-					// Class names can't contain space, so:
-					return explode(' ', $aInput['key'])[1]; 
+				// Dealing with an OQL query. 
+				// Generic: SELECT UserRequest
+				// Specific: SELECT UserRequest WHERE ...
+				if(preg_match('/SELECT (.*?)(?: |$)/', $aInput['key'], $aMatches)) {
+					
+					return $aMatches[1];
+
 				}					
 			} 
 			
 		}
 		
-		throw new Exception('Error in ' . __METHOD__ . '(): class was not defined and it could also not be derived from key.');
+		throw new Exception(sprintf('Error: Unable to derive the iTop class name. The class was not explicitly defined, nor in the key: %1$s', $aInput['key']));
 		
 	}
 	
 	/**
 	 * Shortcut to create an iTop object.
 	 *
-	 * @param array $aParameters array [
-	 *  'comment'         => Optional. String. Describes the action and is stored in iTop's history tab.
-	 *  'fields'          => Required. Array. The fields and values for the object to create.
-	 *  'class'           => Required. String. iTop class name (examples: Organization, Contact, Person ...)
-	 *  'output_fields'   => Optional. Array. List of field names you want to retrieve. 
-	 *                       If not specified, all fields are returned.
-	 * ]
+	 * @param array $aParameters array [  
+	 * Required keys:
+	 * - fields: Array. The fields and values for the objects that need to be updated.
+	 * - class: String. The iTop class name must be specified. Some examples: Organization, Contact, Person, ...
+	 * 
+	 * Optional keys:
+	 * - comment: String. Describes the action and is stored in iTop's history tab.
+	 * - output_fields: Array. List of attribute codes to retrieve.
 	 * 
 	 * @return array
 	 * 
@@ -407,17 +409,16 @@ class Service {
 	/**
 	 * Shortcut to delete iTop objects.
 	 *
-	 * @param array $aParameters Array [
-	 *  'comment'         => Required. String. Describing the action. 
-	 *  'key'             => Required.
-	 *                       Int (iTop ID) 
-	 *                       String (OQL Query) 
-	 *                       Array (one or more fields and their values)
-	 *  'class'           => Required, if key is not an OQL Query. 
-	 *                       String. iTop class name (examples: Organization, Contact, Person ...)
-	 *  'output_fields'   => Optional. Array. List of field names you want to retrieve. 
-	 *                       If not specified, all fields are returned.
-	 *  'simulate'        => Optional. Boolean. Defaults to false. According to iTop documentation, only available for delete operation.
+	 * @param array $aParameters Array [  
+	 * Required keys:
+	 * - class: String. If the key is NOT an OQL query, the iTop class name must be specified. Some examples: Organization, Contact, Person, ...
+	 * - fields: Array. The fields and values for the objects that need to be updated.
+	 * - key: Integer (iTop ID), string (OQL query) or array (one or more attribute codes and their values leading to the identification of an iTop object).
+	 * 
+	 * Optional keys:
+	 * - comment: String. Describes the action and is stored in iTop's history tab.
+	 * - output_fields: Array. List of attribute codes to retrieve.
+	 * - simulate: Boolean. Defaults to false. According to iTop documentation, only available for delete operation.  
 	 * 
 	 * ]
 	 * 
@@ -447,17 +448,14 @@ class Service {
 	/**
 	 * Shortcut to get iTop objects.
 	 *
-	 * @param Array $aParameters Array [
-	 *  'key'             => Required.
-	 *                       Int (iTop ID) 
-	 *                       String (OQL Query) 
-	 *                        Array (one or more fields and their values)
-	 *  'class'           => Required if key is not an OQL Query. 
-	 *                       String. iTop class name (examples: Organization, Contact, Person ...)
-	 *  'output_fields'   => Optional. Array. List of field names you want to retrieve. 
-	 *                       If not specified, all fields are returned.
-	 *                        
-	 * ]
+	 * @param Array $aParameters Array.
+	 * 
+	 * Required keys:
+	 * - class: String. If the key is NOT an OQL query, the iTop class name must be specified. Some examples: Organization, Contact, Person, ...
+	 * - key: Integer (iTop ID), string (OQL query) or array (one or more attribute codes and their values leading to the identification of an iTop object).
+	 * 
+	 * Optional keys:
+	 * - output_fields: Array. List of attribute codes to retrieve.
 	 * 
 	 *
 	 * @return stdClass
@@ -484,18 +482,16 @@ class Service {
 	/**
 	 * Shortcut to update iTop objects.
 	 *
-	 * @param Array $aParameters Array [
-	 *  'comment'          => Optional. String. Describes the action and is stored in iTop's history tab.
-	 *  'fields'           => Required. Array. The fields and values for them that need to be updated
-	 *  'key'              => Required.
-	 *                        Int (iTop ID) 
-	 *                        String (OQL Query) 
-	 *                        Array (one or more fields and their values)
-	 *  'class'            => Required if key is not an OQL Query. 
-	 *                        String. iTop class name (examples: Organization, Contact, Person ...)
-	 *  'output_fields'    => Optional. Array. List of field names you want to retrieve. 
-	 *                        If not specified, it returns all fields.
-	 * ]
+	 * @param Array $aParameters Array.
+	 * 
+	 * Required keys:
+	 * - fields: Array. The fields and values for the objects that need to be updated.
+	 * - key: Integer (iTop ID), string (OQL query) or array (one or more attribute codes and their values leading to the identification of an iTop object).
+	 * - class: String. If the key is NOT an OQL query, the iTop class name must be specified. Some examples: Organization, Contact, Person, ...
+	 * 
+	 * Optional keys:
+	 * - comment: String. Describes the action and is stored in iTop's history tab.
+	 * - output_fields: Array. List of attribute codes to retrieve.
 	 * 
 	 * @return stdClass
 	 * 
@@ -521,7 +517,8 @@ class Service {
 	}
 	
 	/**
-	 * Shortcut to checking credentials. It does not return any user information (neither does the iTop API in version 1.4 and below)
+	 * Shortcut to checking credentials.  
+	 * It does not return any user information (neither does the iTop API in version 1.4 and below)
 	 *
 	 * @return stdClass
 	 * 
