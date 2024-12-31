@@ -203,17 +203,17 @@ class Service {
 	/**
 	 * Constructor
 	 *
+	 * @param string $sUrl URL Optional iTop URL (REST).
 	 * @param string $sUserLogin Optional User login name.
 	 * @param string $sPassword Optional Password.
-	 * @param string $sUrl URL Optional iTop URL (REST).
 	 *
 	 * @throws Exception
 	 */		 
-	public function __construct($sUserLogin, $sPassword, $sUrl) {
+	public function __construct($sUrl, $sUserLogin, $sPassword) {
 		
+		$this->SetUrl($sUrl);
 		$this->SetUserLogin($sUserLogin);
 		$this->SetPassword($sPassword);
-		$this->SetUrl($sUrl);
 		
 	}
 	
