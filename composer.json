@@ -12,9 +12,9 @@
 				"role": "Developer"
 		}
 	],
-	"autoload": {
-		"psr-4": {
-			"jb_itop_rest\\": "src/"
-		}
-	}
+    "autoload": {
+        "psr-0": {
+            "AppName": "src/"
+        }
+    }
 }

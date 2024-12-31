@@ -6,30 +6,26 @@ namespace Composer\Autoload;
 
 class ComposerStaticInitcde32ae9a1df670d8eef4586cb197297
 {
-    public static $prefixLengthsPsr4 = array (
-        'j' => 
+    public static $prefixesPsr0 = array (
+        'A' => 
         array (
-            'jb_itop_rest\\' => 13,
-        ),
-    );
-
-    public static $prefixDirsPsr4 = array (
-        'jb_itop_rest\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/src',
+            'AppName' => 
+            array (
+                0 => __DIR__ . '/../..' . '/src',
+            ),
         ),
     );
 
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
-        'jb_itop_rest\\iTopRest' => __DIR__ . '/../..' . '/src/iTopRest.php',
+        'JeffreyBostoen\\iTopRestService\\RestException' => __DIR__ . '/../..' . '/src/JeffreyBostoen/iTopRestService/RestException.php',
+        'JeffreyBostoen\\iTopRestService\\Service' => __DIR__ . '/../..' . '/src/JeffreyBostoen/iTopRestService/Service.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitcde32ae9a1df670d8eef4586cb197297::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitcde32ae9a1df670d8eef4586cb197297::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInitcde32ae9a1df670d8eef4586cb197297::$prefixesPsr0;
             $loader->classMap = ComposerStaticInitcde32ae9a1df670d8eef4586cb197297::$classMap;
 
         }, null, ClassLoader::class);
