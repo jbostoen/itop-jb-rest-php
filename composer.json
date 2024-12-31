@@ -1,7 +1,7 @@
 {
-	"name": "jbostoen/itoprest",
+	"name": "jbostoen/itop-rest-php",
 	"type": "library",
-	"description": "Basic iTop REST/JSON API client library",
+	"description": "iTop REST/JSON API client - PHP library",
 	"keywords": ["itop"],
 	"homepage": "https://github.com/jbostoen/itop-jb-rest-php",
 	"license": "MIT",
