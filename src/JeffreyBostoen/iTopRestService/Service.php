@@ -384,7 +384,7 @@ class Service {
 	 * - comment: String. Describes the action and is stored in iTop's history tab.
 	 * - output_fields: Array. List of attribute codes to retrieve.
 	 * 
-	 * @return array
+	 * @return stdClass
 	 * 
 	 * @throws Exception If the error is likely related to connectivity instead.
 	 * @throws RestException If the API endpoint actually provided an (error) response.

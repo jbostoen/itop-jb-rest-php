@@ -30,7 +30,7 @@ Also supports preparing and sending base64 encoded data (files).
 
 ## Quick install
 
-`composer require jbostoen/itoprest`
+`composer require jbostoen/itop-rest-php`
 
 
 ## Examples
