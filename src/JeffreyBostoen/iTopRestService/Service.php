@@ -19,27 +19,32 @@ use stdClass;
 class Service {
 	
 	/**
-	* @var string $sUserDisplayName. Name which is used by default in REST comments.
+	* @var string $sUserDisplayName The name that is used by default in REST comments.
 	*/
 	private $sUserDisplayName = 'iTop REST';		
 	
 	/**
-	 * @var string $sPassword. The password of the iTop user to authenticate with. has the REST User Profile (in iTop)
+	 * @var string $sPassword The password of the iTop user to authenticate with. has the REST User Profile (in iTop)
 	 */
 	private $sPassword = 'password';
 	
 	/**
-	 * @var string|null $sTraceLogFileName. For debugging purposes. Outputs the network request and response info sent to iTop REST/JSON to this filename.
+	 * @var string|null $sTraceLogFileName For debugging purposes. Outputs the network request and response info sent to iTop REST/JSON to this filename.
 	 */
 	private $sTraceLogFileName = null;
 	
 	/**
-	 * @var bool $bSkipCertificateCheck. For development purposes. Skips SSL/TLS checks.
+	 * @var bool $bSkipCertificateCheck For development purposes. Skips SSL/TLS checks.
 	 */
 	private $bSkipCertificateCheck = false;
 	
+	/**
+	 * @var bool $bSupportBasicAuth When enabled, this service will authenticate using Basic Auth.
+	 */
+	private $bSupportBasicAuth = true;
+
 	/** 
-	 * @var string $sURL. URL of the iTop web services, including version.  
+	 * @var string $sURL URL of the iTop web services, including version.  
 	 * Example: http://localhost/itop/web/webservices/rest.php
 	 * 
 	 * @details If left blank, an attempt to derive this info will happen in __construct()
@@ -47,7 +52,7 @@ class Service {
 	private $sUrl = '';
 	
 	/**
-	 *@var string $sUserLogin. The user account that will be used to authenticate.  
+	 *@var string $sUserLogin The user account that will be used to authenticate ("auth_user").  
 	 * This user needs to have the REST User Profile (in iTop). 
 	 * Note: iTop REST/JSON error messages might be returned in the language set for the specified user account.
 	 */
@@ -65,7 +70,7 @@ class Service {
 	private $sOutputFields = '*';
 	
 	/**
-	 * @var String $sVersion. describing the REST API version. 
+	 * @var String $sVersion describing the REST API version. 
 	 * @See https://www.itophub.io/wiki/page?id=latest:advancedtopics:rest_json#changes_history
 	 */
 	private $sVersion = '1.3';
@@ -151,6 +156,20 @@ class Service {
 
 
 	/**
+	 * Whether or not to support Basic Authentication.
+	 *
+	 * @param bool $bValue
+	 * 
+	 * @return Service This service.
+	 */
+	public function SetSupportBasicAuth(bool $bValue) : Service {
+
+		$this->bSupportBasicAuth = $bValue;
+		return $this;
+
+	}
+
+	/**
 	 * Sets the API URL to use.
 	 *
 	 * @param string $sUrl
@@ -185,7 +204,7 @@ class Service {
 	 * Best practice: Per request, specify only the fields that are needed.
 	 * 
 	 * - "@*" means all the attributes of the queried class.
-     * - "*+" (since 2.0.3) means all the attributes of each object found (subclasses may have more attributes than the queried class).
+	 * - "*+" (since 2.0.3) means all the attributes of each object found (subclasses may have more attributes than the queried class).
 	 * 
 	 * This class defaults to '*', as it is unknown what class will be queried.
 	 * 
@@ -232,15 +251,19 @@ class Service {
 	 */ 
 	public function Post(array $aJSONData = []) : stdClass {
 		
-		//  Initiate curl.
+		// Initiate curl.
 		$ch = curl_init();
 		
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');        
-		curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-		curl_setopt($ch, CURLOPT_USERPWD, sprintf('%1$s:%2$s', $this->sUserLogin, $this->sPassword));
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
 		curl_setopt($ch, CURLOPT_URL, $this->sUrl);
 		
+		// To support BasicAuth:
+		if($this->bSupportBasicAuth == true) {
+			curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			curl_setopt($ch, CURLOPT_USERPWD, sprintf('%1$s:%2$s', $this->sUserLogin, $this->sPassword));
+		}
+
 		// If needed: Disable SSL/TLS verification.
 		if($this->bSkipCertificateCheck == true) {
 			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -262,7 +285,7 @@ class Service {
 		$this->Trace(json_encode($aPostData, JSON_PRETTY_PRINT));
 		$this->Trace('Data for iTop API:');
 		$this->Trace(json_encode($aJSONData, JSON_PRETTY_PRINT));
-		$this->Trace('cURL Start execution: '.date('Y-m-d H:i:s'));
+		$this->Trace('cURL Start execution.');
 		
 		// Execute
 		$sResult = curl_exec($ch);
@@ -276,7 +299,14 @@ class Service {
 		$this->Trace('Response:');
 		$this->Trace($sResult);
 		
-		$oResponse = json_decode($sResult, true);
+		$oResponse = json_decode($sResult);
+
+		if($sResult == '' && $this->bSkipCertificateCheck == false) {
+			throw new Exception('Unable to get a response. Try disabling the SSL/TLS check.');
+		}
+		elseif(is_object($oResponse) == false) {
+			throw new Exception('Unable to decode API response.');
+		}
 		
 		$this->IsSuccessfulResponse($oResponse);
 
@@ -305,7 +335,8 @@ class Service {
 		return [
 			'data' => base64_encode($oData), // Warning: escape url_encode!
 			'filename' => basename($sFileName),
-			'mimetype' => $sType
+			'mimetype' => $sType,
+			'downloads_count' => 0, // Since iTop 3.2.
 		];
 		
 	}
@@ -391,15 +422,15 @@ class Service {
 	 *
 	 */ 
 	public function Create(array $aParameters = []) : stdClass {
-		
+
 		$sClassName = $this->GetClassName($aParameters);
 					
 		$oResponse = $this->Post([
-			'operation' => 'core/create', // Action
-			'class' => $sClassName, // Class of object to create
-			'fields' => $aParameters['fields'], // Field data to be saved
-			'comment' => (isset($aParameters['comment']) == true ? $aParameters['comment'] : 'Created by ' . $this->sUserDisplayName), // Comment in history tab
-			'output_fields' => (isset($aParameters['output_fields']) == true ? $aParameters['output_fields'] :	$this->sOutputFields)
+			'operation' => 'core/create',
+			'class' => $sClassName,
+			'fields' => $aParameters['fields'],
+			'comment' => $aParameters['comment'] ?? sprintf('Created by %1$s', $this->sUserDisplayName),
+			'output_fields' => $aParameters['output_fields'] ?? $this->sOutputFields
 		]);
 
 		return $oResponse;
@@ -433,12 +464,12 @@ class Service {
 		$sClassName = $this->GetClassName($aParameters);
 		
 		$oResponse = $this->Post([
-			'operation' => 'core/delete', // iTop REST/JSON operation
-			'class' => $sClassName, // Class of object to delete
-			'key' => $aParameters['key'], // OQL query (String), ID (Float) or fields/values (Array)
-			'comment' => (isset($aParameters['comment']) == true ? $aParameters['comment'] : 'Deleted by ' . $this->sUserDisplayName), // Comment in history tab?
-			'output_fields' => (isset($aParameters['output_fields']) == true ? $aParameters['output_fields'] :	$this->sOutputFields),
-			'simulate' => (isset($aParameters['simulate']) == true ? $aParameters['simulate'] : false)
+			'operation' => 'core/delete',
+			'class' => $sClassName,
+			'key' => $aParameters['key'],
+			'comment' => $aParameters['comment'] ?? sprintf('Deleted by %1$s', $this->sUserDisplayName),
+			'output_fields' => $aParameters['output_fields'] ?? $this->sOutputFields,
+			'simulate' => $aParameters['simulate'] ?? false
 		]);
 
 		return $oResponse;
@@ -448,7 +479,7 @@ class Service {
 	/**
 	 * Shortcut to get iTop objects.
 	 *
-	 * @param Array $aParameters Array.
+	 * @param array $aParameters Array.
 	 * 
 	 * Required keys:
 	 * - class: String. If the key is NOT an OQL query, the iTop class name must be specified. Some examples: Organization, Contact, Person, ...
@@ -469,10 +500,10 @@ class Service {
 		$sClassName = $this->GetClassName($aParameters);
 					
 		$oResponse = $this->Post([
-			'operation' => 'core/get', // iTop REST/JSON operation
-			'class' => $sClassName, // Class of object(s) to retrieve
-			'key' => $aParameters['key'], // OQL query (String), ID (Float) or fields/values (Array)
-			'output_fields' => (isset($aParameters['output_fields']) == true ? $aParameters['output_fields'] :	$this->sOutputFields)			
+			'operation' => 'core/get',
+			'class' => $sClassName,
+			'key' => $aParameters['key'],
+			'output_fields' => $aParameters['output_fields'] ?? $this->sOutputFields
 		]);
 
 		return $oResponse;
@@ -482,7 +513,7 @@ class Service {
 	/**
 	 * Shortcut to update iTop objects.
 	 *
-	 * @param Array $aParameters Array.
+	 * @param array $aParameters Array.
 	 * 
 	 * Required keys:
 	 * - fields: Array. The fields and values for the objects that need to be updated.
@@ -504,18 +535,59 @@ class Service {
 		$sClassName = $this->GetClassName($aParameters);
 		
 		$oResponse = $this->Post([
-			'operation' => 'core/update', // iTop REST/JSON operation
-			'class' => $sClassName, // Class of object to update
-			'key' => $aParameters['key'], // OQL query (String), ID (Float) or fields/values (Array)
-			'fields' => $aParameters['fields'], // Field data to be updated
-			'comment' => (isset($aParameters['comment']) == true ? $aParameters['comment'] : 'Updated by ' . $this->sUserDisplayName), // Comment in history tab
-			'output_fields' => (isset($aParameters['output_fields']) == true ? $aParameters['output_fields'] :	$this->sOutputFields),
+			'operation' => 'core/update',
+			'class' => $sClassName,
+			'key' => $aParameters['key'],
+			'fields' => $aParameters['fields'],
+			'comment' =>$aParameters['comment'] ?? sprintf('Updated by %1$s', $this->sUserDisplayName),
+			'output_fields' => $aParameters['output_fields'] ?? $this->sOutputFields,
 		]);
 		
 		return $oResponse;
 		
 	}
 	
+	/**
+	 * Shortcut to first update iTop objects and then apply a stimulus to them.
+	 *
+	 * @param array $aParameters Array.
+	 * 
+	 * Required keys:
+	 * - fields: Array. The fields and values for the objects that need to be updated.
+	 * - key: Integer (iTop ID), string (OQL query) or array (one or more attribute codes and their values leading to the identification of an iTop object).
+	 * - class: String. If the key is NOT an OQL query, the iTop class name must be specified. Some examples: Organization, Contact, Person, ...
+	 * - stimulus: String. A valid stimulus, e.g. ev_assign.
+	 * 
+	 * Optional keys:
+	 * - comment: String. Describes the action and is stored in iTop's history tab.
+	 * - output_fields: Array. List of attribute codes to retrieve.
+	 * 
+	 * @param string $sStimulus
+	 * 
+	 * @return stdClass
+	 * 
+	 * @throws Exception If the error is likely related to connectivity instead.
+	 * @throws RestException If the API endpoint actually provided an (error) response.
+	 *
+	 */ 
+	public function ApplyStimulus(array $aParameters = [], string $sStimulus) : stdClass {
+		
+		$sClassName = $this->GetClassName($aParameters);
+		
+		$oResponse = $this->Post([
+			'operation' => 'core/apply_stimulus',
+			'class' => $sClassName,
+			'key' => $aParameters['key'],
+			'fields' => $aParameters['fields'],
+			'stimulus' => $sStimulus,
+			'comment' => $aParameters['comment'] ?? sprintf('Updated by %1$s', $this->sUserDisplayName),
+			'output_fields' => $aParameters['output_fields'] ?? $this->sOutputFields,
+		]);
+		
+		return $oResponse;
+		
+	}
+
 	/**
 	 * Shortcut to checking credentials.  
 	 * It does not return any user information (neither does the iTop API in version 1.4 and below)
@@ -528,7 +600,7 @@ class Service {
 	public function CheckCredentials() : stdClass {
 		
 		$oResponse = $this->Post([
-			'operation' => 'core/check_credentials', // iTop REST/JSON operation
+			'operation' => 'core/check_credentials',
 			'user' => $this->sUserLogin,
 			'password' => $this->sPassword
 		]);
@@ -562,6 +634,3 @@ class Service {
 	
 }
 
-
-
-	

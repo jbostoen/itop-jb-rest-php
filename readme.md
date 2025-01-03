@@ -22,6 +22,7 @@ Basic support for:
 * core/create
 * core/update
 * core/delete
+* core/apply_stimulus
 ```
 
 There's a generic method to post and process other info.  
