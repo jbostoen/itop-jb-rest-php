@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (C) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2025-01-03:00:00
+ * @version     2025-01-1§ 16:03:00
  * @see         https://www.itophub.io/wiki/page?id=latest%3Aadvancedtopics%3Arest_json
  */
  
