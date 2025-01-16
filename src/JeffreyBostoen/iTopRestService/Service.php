@@ -1,9 +1,9 @@
 <?php
 
 /**
- * @copyright   Copyright (C) 2019-2024 Jeffrey Bostoen
+ * @copyright   Copyright (C) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2024-12-31 13:00:00
+ * @version     2025-01-03:00:00
  * @see         https://www.itophub.io/wiki/page?id=latest%3Aadvancedtopics%3Arest_json
  */
  
@@ -570,7 +570,7 @@ class Service {
 	 * @throws RestException If the API endpoint actually provided an (error) response.
 	 *
 	 */ 
-	public function ApplyStimulus(array $aParameters = [], string $sStimulus) : stdClass {
+	public function ApplyStimulus(array $aParameters = []) : stdClass {
 		
 		$sClassName = $this->GetClassName($aParameters);
 		
@@ -579,7 +579,7 @@ class Service {
 			'class' => $sClassName,
 			'key' => $aParameters['key'],
 			'fields' => $aParameters['fields'],
-			'stimulus' => $sStimulus,
+			'stimulus' => $aParameters['stimulus'],
 			'comment' => $aParameters['comment'] ?? sprintf('Updated by %1$s', $this->sUserDisplayName),
 			'output_fields' => $aParameters['output_fields'] ?? $this->sOutputFields,
 		]);
@@ -630,6 +630,31 @@ class Service {
 			
 		}
 		
+	}
+
+	/**
+	 * From a response: Get an array of objects.
+	 *
+	 * @param stdClass $oResponse The REST/JSON API response.
+	 * @param boolean $bWithKeys Whether to return an associative array, where the key is something like <iTopClassName>::<id>
+	 * 
+	 * @return array
+	 */
+	public function GetObjectsAsArray(stdClass $oResponse, bool $bWithKeys) {
+
+		if(property_exists($oResponse, 'objects') == false || $oResponse->objects === null) {
+			static::Trace('Objects as array: No objects. Returning empty array.');
+			return [];
+		}
+
+		$aObjects = get_object_vars($oResponse->objects);
+
+		if(!$bWithKeys) {
+			$aObjects = array_values($aObjects);
+		}
+
+		return $aObjects;
+
 	}
 	
 }

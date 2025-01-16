@@ -1,9 +1,9 @@
 <?php
 
 /**
- * @copyright   Copyright (C) 2019-2024 Jeffrey Bostoen
+ * @copyright   Copyright (C) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2024-12-31 13:00:00
+ * @version     2025-01-03:00:00
  * @see         https://www.itophub.io/wiki/page?id=latest%3Aadvancedtopics%3Arest_json
  */
  
@@ -27,12 +27,12 @@ class RestException extends Exception {
     /**
      * Construct method
      *
-     * @param String $sMessage Short message that describes the error.
-     * @param Integer $iCode Integer indicating an error. Defaults to 0.
+     * @param string $sMessage Short message that describes the error.
+     * @param int $iCode Integer indicating an error. Defaults to 0.
      * @param Exception $oPreviousException Previous exception.
-     * @param Array $aResponseFromAPI Hashtable containing more details. Details are optional. If they are set, it should be an iTop API REST-response.
+     * @param stdClass $oResponse This should be the REST/JSON API response.
      */
-    public function __construct($sMessage, $iCode = 0, Exception $oPreviousException = null, stdClass $oResponse) {
+    public function __construct(string $sMessage, int $iCode = 0, Exception $oPreviousException = null, stdClass $oResponse = null) {
         
         // make sure everything is assigned properly
         parent::__construct($sMessage, $iCode, $oPreviousException);
