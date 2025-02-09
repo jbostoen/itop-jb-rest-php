@@ -283,8 +283,6 @@ class Service {
 		$this->Trace('Url: %1$s', $this->sUrl);
 		$this->Trace('Request:');
 		$this->Trace(json_encode($aPostData, JSON_PRETTY_PRINT));
-		$this->Trace('Data for iTop API:');
-		$this->Trace(json_encode($aJSONData, JSON_PRETTY_PRINT));
 		$this->Trace('cURL Start execution.');
 		
 		// Execute
@@ -621,7 +619,11 @@ class Service {
 		
 		if($this->sTraceLogFileName !== null) {
 			
-			$sMessage = call_user_func_array('sprintf', func_get_args());
+			// It's possible "%" is used in an OQL.
+			$aArgs = func_get_args();
+			if(count($aArgs) > 1) {
+				$sMessage = call_user_func_array('sprintf', $aArgs);
+			}
 
 			file_put_contents($this->sTraceLogFileName, sprintf('%1$s | %2$s' . PHP_EOL, 
 				date('Y-m-d H:i:s'),
